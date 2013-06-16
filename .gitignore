@@ -37,6 +37,14 @@ x64/
 *.vssscc
 .builds
 
+#Tools
+_ReSharper.*
+_ReSharper*/
+*.resharper
+*.resharper.user
+[Nn][Dd]epend[Oo]ut*/
+Ankh.NoLoad
+
 # Visual C++ cache files
 ipch/
 *.aps
