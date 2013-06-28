@@ -19,10 +19,11 @@ namespace Wisgance.Office.Excel.Reader
                             FieldName=header,
                             FieldType = typeof(string)
                         })).ToList();
-            var excelHeaders = new List<string>();
+            
+            //var excelHeaders = new List<string>();
 
-            for (var i = 1; i <= columnHeaders.Count; i++)
-                excelHeaders.Add(Utility.IntToAlpha(i));
+            //for (var i = 1; i <= columnHeaders.Count; i++)
+            //    excelHeaders.Add(Utility.IntToAlpha(i));
 
             //var rowsCount = excelHeaders.Select(header => GetColumnValues(stream, "", header.ToString()).Count).Concat(new[] {0}).Max();
 
@@ -30,7 +31,7 @@ namespace Wisgance.Office.Excel.Reader
             long k = 1;
             while (true)
             {
-                var obj = MyTypeBuilder.CreateNewObject(objProp);
+                var obj = WisganceTypeGenerator.CreateNewObject(objProp);
 
                 var values = GetRowValues(stream, "", (k + 1).ToString());
                 if (!values.Any())

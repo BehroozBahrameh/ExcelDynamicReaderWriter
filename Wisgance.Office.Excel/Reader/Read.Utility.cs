@@ -9,53 +9,69 @@ namespace Wisgance.Office.Excel.Reader
 {
     public partial class Read
     {
+        /// <summary>
+        /// Get all specific column's cell data
+        /// </summary>
+        /// <param name="file">Excel file</param>
+        /// <param name="sheetName">selected sheet, if set empty or incorrect sheet name, automatically get first sheet</param>
+        /// <param name="reference">column name</param>
+        /// <returns></returns>
         private static List<string> GetColumnValues(Stream file, string sheetName, string reference)
         {
             var result = new List<string>();
 
+            //Read Excel File by OpenXml Library
             using (var document = SpreadsheetDocument.Open(file, false))
             {
-                var wbPart = document.WorkbookPart;
+                var workbook = document.WorkbookPart;
 
-                var theSheet = wbPart.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName) ??
-                                 wbPart.Workbook.Descendants<Sheet>().FirstOrDefault(sheet => true);
+                var theSheet = workbook.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName) ??
+                                 workbook.Workbook.Descendants<Sheet>().FirstOrDefault(sheet => true);
 
-                var wsPart = (WorksheetPart)(wbPart.GetPartById(theSheet.Id));
+                var worksheet = (WorksheetPart)(workbook.GetPartById(theSheet.Id));
 
-                var cells = wsPart.Worksheet.Descendants<Cell>().Where(c => GetCellCol(c.CellReference).ToUpper() == reference);
+                var cells = worksheet.Worksheet.Descendants<Cell>().Where(c => GetCellCol(c.CellReference).ToUpper() == reference);
 
-                result.AddRange(from theCell in cells where theCell != null select ExtractCellValue(theCell, wbPart));
+                //get cell data by calling ExtractCellValue function
+                result.AddRange(from theCell in cells where theCell != null select ExtractCellValue(theCell, workbook));
             }
 
             return result;
         }
 
+        /// <summary>
+        /// Get all specific row's cell data
+        /// </summary>
+        /// <param name="file">Excel file</param>
+        /// <param name="sheetName">selected sheet, if set empty or incorrect sheet name, automatically get first sheet</param>
+        /// <param name="reference">cell name></param>
+        /// <returns></returns>
         private static List<string> GetRowValues(Stream file, string sheetName, string reference)
         {
             var result = new List<string>();
 
+            //Read Excel File by OpenXml Library
             using (var document = SpreadsheetDocument.Open(file, false))
             {
-                var wbPart = document.WorkbookPart;
+                var workbook = document.WorkbookPart;
 
-                var theSheet = wbPart.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName);
-
-                if (theSheet == null)
-                {
-                    theSheet = wbPart.Workbook.Descendants<Sheet>().FirstOrDefault(sheet => true);
-                }
+                //If sheet name dose not exsits, get the first shhet of excel file.
+                var theSheet = workbook.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName) ??
+                               workbook.Workbook.Descendants<Sheet>().FirstOrDefault(sheet => true);
 
                 if (theSheet == null)
                 {
-                    throw new ArgumentException("sheetName");
+                    throw new ArgumentException("NOT EXISTS SHEET!!");
                 }
+                
+                var workSheet = (WorksheetPart)(workbook.GetPartById(theSheet.Id));
 
-                var wsPart = (WorksheetPart)(wbPart.GetPartById(theSheet.Id));
-
+                //read all cells in selected row of sheet by passed "reference" argument
                 var cells =
-                    wsPart.Worksheet.Descendants<Cell>().Where(c => GetCellRow(c.CellReference).ToUpper() == reference);
+                    workSheet.Worksheet.Descendants<Cell>().Where(c => GetCellRow(c.CellReference).ToUpper() == reference);
 
-                result.AddRange(from theCell in cells where theCell != null select ExtractCellValue(theCell, wbPart));
+                //get cell data by calling ExtractCellValue function
+                result.AddRange(from theCell in cells where theCell != null select ExtractCellValue(theCell, workbook));
             }
 
             return result;
@@ -87,7 +103,13 @@ namespace Wisgance.Office.Excel.Reader
             return result;
         }
 
-        private static string ExtractCellValue(Cell theCell, WorkbookPart wbPart)
+        /// <summary>
+        /// Extract cell's data by cell's data type
+        /// </summary>
+        /// <param name="theCell">the cell that we want extract data</param>
+        /// <param name="workbook">workbook of selected cell</param>
+        /// <returns>cell's data in string format</returns>
+        private static string ExtractCellValue(Cell theCell, WorkbookPart workbook)
         {
             string value = theCell.InnerText;
 
@@ -97,7 +119,7 @@ namespace Wisgance.Office.Excel.Reader
                 {
                     case CellValues.SharedString:
 
-                        var stringTable = wbPart.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
+                        var stringTable = workbook.GetPartsOfType<SharedStringTablePart>().FirstOrDefault();
 
                         if (stringTable != null)
                         {

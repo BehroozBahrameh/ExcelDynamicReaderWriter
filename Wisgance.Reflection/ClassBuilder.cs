@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 
 namespace Wisgance.Reflection
 {
-    public static class MyTypeBuilder
+    public static class WisganceTypeGenerator
     {
         public static object CreateNewObject(List<FieldMask> props)
         {
@@ -14,13 +14,13 @@ namespace Wisgance.Reflection
             return myObject;
         }
 
-        public static Type CompileResultType(List<FieldMask> yourListOfFields)
+        public static Type CompileResultType(List<FieldMask> properties)
         {
             TypeBuilder tb = GetTypeBuilder();
             ConstructorBuilder constructor = tb.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
             // NOTE: assuming your list contains Field objects with fields FieldName(string) and FieldType(Type)
-            foreach (var field in yourListOfFields)
+            foreach (var field in properties)
                 CreateProperty(tb, field.FieldName, field.FieldType);
 
             Type objectType = tb.CreateType();
@@ -29,9 +29,9 @@ namespace Wisgance.Reflection
 
         private static TypeBuilder GetTypeBuilder()
         {
-            var typeSignature = "MyDynamicType";
-            var an = new AssemblyName(typeSignature);
-            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run);
+            var typeSignature = "WisganceDynamicType";
+            var assemblyName = new AssemblyName(typeSignature);
+            AssemblyBuilder assemblyBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("MainModule");
             TypeBuilder tb = moduleBuilder.DefineType(typeSignature
                                 , TypeAttributes.Public |
@@ -47,7 +47,6 @@ namespace Wisgance.Reflection
         private static void CreateProperty(TypeBuilder tb, string propertyName, Type propertyType)
         {
             FieldBuilder fieldBuilder = tb.DefineField("_" + propertyName, propertyType, FieldAttributes.Private);
-
             PropertyBuilder propertyBuilder = tb.DefineProperty(propertyName, PropertyAttributes.HasDefault, propertyType, null);
             MethodBuilder getPropMthdBldr = tb.DefineMethod("get_" + propertyName, MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, propertyType, Type.EmptyTypes);
             ILGenerator getIl = getPropMthdBldr.GetILGenerator();
