@@ -1,80 +1,37 @@
-Read and Write Excel File Dynamically
-=======
-In this tip, I decided to describe two parts, one part related to how I can read Excel file and the second part describes how I can generate a class dynamically and fill it.
+#Read and Write Excel File Dynamically
+##About
+This project provide to you extracting data from excel documents as a list of object that dynamically.
 
-When an Excel file is passed to the code, the first row of Excel file chooses as a class properties that we want to generate it. This functionality is implemented in GetRowValues static method in Wisgance.Office.Excel.Reader.Read class:
+##How to use
+If want get list of object that dynamically created by excel header names, just call below function and send your file address!
+    
+    var stream = new MemoryStream(File.ReadAllBytes("YOUR_FILE_ADDRESS.xlsx"));
 
-    private static List<string> GetColumnValues(Stream file, string sheetName, string reference)
-            {
-                var result = new List<string>();
-     
-                //Read Excel File by OpenXml Library
-                using (var document = SpreadsheetDocument.Open(file, false))
-                {
-                    var workbook = document.WorkbookPart;
-     
-                    var theSheet = workbook.Workbook.Descendants<Sheet>().FirstOrDefault(s => s.Name == sheetName) ??
-                                     workbook.Workbook.Descendants<Sheet>().FirstOrDefault(sheet => true);
-     
-                    var worksheet = (WorksheetPart)(workbook.GetPartById(theSheet.Id));
-     
-                    var cells = worksheet.Worksheet.Descendants<Cell>().Where(c => GetCellCol(c.CellReference).ToUpper() == reference);
-     
-                    //get cell data by calling ExtractCellValue function
-                    result.AddRange(from theCell in cells where theCell != null select ExtractCellValue(theCell, workbook));
-                }
-     
-                return result;
-            } 
+and also you can fill list of your object by sending list of object property name and excel related header in below function :
+    
+     ReadObjFromExel<T>(Stream stream, ExcelHeaderList pattern, string sheetName)
+ 
+ - **stream** excel file
+ - **pattern** list of related object property and excel columns
+ - **sheetname** selected sheet of excel file for extracting data
 
-In this function and some others like GetRowValues or GetCellData exists argument named references. This argument gets Excel cell address, for example for first row data, we send "1" but for first column, we send "A".
+pattern is a list of below class
 
-After extracting first row data, we passed these data to the CreateNewObject function in Wisgance.Reflection.WisganceTypeGenerator class.
-
-     public static object CreateNewObject(List<FieldMask> props)
-            {
-                var myType = CompileResultType(props);
-                var myObject = Activator.CreateInstance(myType);
-                return myObject;
-            } 
-
-In the first line, we generate a type via extracted data from Excel (CompileResultType) . In the second line, we create an instance of this class and return it.
-
-    while (true)
-                {
-                    var obj = WisganceTypeGenerator.CreateNewObject(objProp);
-                    var values = GetRowValues(stream, "", (k + 1).ToString());
-                    if (!values.Any())
-                        break;
-                    for (var c = 0; c < objProp.Count; c++)
-                    {
-                        try
-                        {
-                            var propertyInfo = obj.GetType().GetProperty(objProp[c].FieldName);
-                            propertyInfo.SetValue(obj, values[c], null);
-                        }
-                        catch (Exception) { }
-                    }
-                    result.Add(obj);
-                    k++;
-                } 
-
-While true loop, this part is for reading data till it reaches the empty row. In each iteration, an object instantiates and fills properties value by selected row cell values.
-
-For writing a list of objects in Excel, call Do function in Wisgance.Office.Excel.Writer.Write.
-
-    if (headerNames == null)
+    public class ExcelHeader
     {
-      headerNames = new ExcelHeaderList();
-    	foreach (var o in ObjUtility.GetPropertyInfo(objects[0]))
-        	{
-           		headerNames.Add(o, o);
-          	}
-    } 
+        public string Key { get; set; }
+        public string Value { get; set; }
+        public ExcelHeaderType HeaderType { get; set; }
+    }
 
-If headerNames is null, automatically set the property name as an Excel header, and also you can pass headerList if you want to customize the header name.
+alse you can get a list of object as excel file (function return type is Stream ), jest send your list to below function
+    
+    Wisgance.Office.Excel.Writer.Write().Do(yourListOfData, "SheetName", null);
 
-You can download it in [Nuget][1] here
+First argement is your list, second one is sheetname that you want set in generated excel file and third one is culomn name.
+if sent null for third argument, function put property name as column name.
 
+-------------------
+You can add this library by [nuget][1] in your project
 
   [1]: https://nuget.org/packages/ExcelDynamicReaderWriter/
